@@ -135,6 +135,7 @@ public:
             hungryTime += duration.count();
 
             mystatus = EATING;
+            
 
             cout << id << " started eating.\n\n";
 
