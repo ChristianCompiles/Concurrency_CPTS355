@@ -7,10 +7,28 @@
 #include <ctime>
 #include <time.h>
 #include <random>
+#include <sstream>
 using namespace std;
 //const int UNLOCKED = 0;
 //const int LOCKED = 1;
 const int NUMBER_OF_PHILOSOPHERS = 5;
+
+#define DEBUG 0
+
+class NullBuffer : public std::streambuf {
+public:
+    int overflow(int c) override { return c; } // Do nothing and return the character
+};
+
+NullBuffer null_buffer;
+std::ostream null_stream(&null_buffer);
+
+ostream& debug() {
+    if (DEBUG) {
+        return cout;
+    }
+    return null_stream;
+}
 
 mutex outputMutex;
 
@@ -99,9 +117,9 @@ public:
         {
             lock_guard<std::mutex> outLock(outputMutex);
             cout << endl << id << " stats\n";
-            cout << "hungrytime: " << hungryTime << endl;
-            cout << "thinkingtime: " << thinkTime << endl;
-            cout << "eatingtime: " << eatTime << endl;
+            cout << "hungrytime: " << hungryTime << "us" << endl;
+            cout << "thinkingtime: " << thinkTime << "ms" << endl;
+            cout << "eatingtime: " << eatTime << "ms" << endl;
         }
 
         mainThread.join();
@@ -115,19 +133,19 @@ public:
 
         while(!stopping) {
             mystatus = THINKING;
-            cout << "philosopher #" << id << " is thinking\n";
+            debug() << "philosopher #" << id << " is thinking\n";
             use_timer(1000000, thinkTime);
             // coin toss
             // start hungry timer
             auto start = std::chrono::high_resolution_clock::now();
             if (dist(mt) == 1) // if 1, pick up left first
             {
-                cout << id << ": up LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
+                debug() << id << ": up LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
                 syncro.pickUpChopstick(left_chopstick);
                 syncro.pickUpChopstick(right_chopstick);
             } else // pick up right first
             {
-                cout << id << ": up RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
+                debug() << id << ": up RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
                 syncro.pickUpChopstick(right_chopstick);
                 syncro.pickUpChopstick(left_chopstick);
             }
@@ -137,15 +155,15 @@ public:
 
             mystatus = EATING;
             
-            cout << id << " started eating.\n\n";
+            debug() << id << " started eating.\n\n";
 
             if (dist(mt) == 1) // if 1, set down left first
             {
-                cout << id << ": down LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
+                debug() << id << ": down LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
                 syncro.putDownChopstick(left_chopstick);
                 syncro.putDownChopstick(right_chopstick);
             } else {
-                cout << id << ": down RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
+                debug() << id << ": down RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
                 syncro.putDownChopstick(right_chopstick);
                 syncro.putDownChopstick(left_chopstick);
             }
@@ -154,7 +172,7 @@ public:
         }
 
 
-        //cout << id << " finished eating.\n";
+        //debug() << id << " finished eating.\n";
     }
 
     void stop() {
