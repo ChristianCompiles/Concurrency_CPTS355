@@ -132,12 +132,11 @@ public:
                 syncro.pickUpChopstick(left_chopstick);
             }
             auto stop = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
             hungryTime += duration.count();
 
             mystatus = EATING;
             
-
             cout << id << " started eating.\n\n";
 
             if (dist(mt) == 1) // if 1, set down left first
@@ -150,6 +149,7 @@ public:
                 syncro.putDownChopstick(right_chopstick);
                 syncro.putDownChopstick(left_chopstick);
             }
+            use_timer(500000, eatTime);
             mystatus = HUNGRY;
         }
 
