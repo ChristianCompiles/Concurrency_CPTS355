@@ -80,6 +80,7 @@ private:
     Syncro &syncro;
     int left_chopstick, right_chopstick;
     status mystatus;
+    bool stopping = false;
 
 public:
     Philosopher(const string& name, Syncro &t, int id): mainThread(&Philosopher::run, this), syncro(t)
@@ -112,7 +113,7 @@ public:
         static std::mt19937 mt(rd());
         static std::uniform_int_distribution<int> dist(1, 2);
 
-        while(true) {
+        while(!stopping) {
             mystatus = THINKING;
             cout << "philosopher #" << id << " is thinking\n";
             use_timer(1000000, thinkTime);
@@ -155,6 +156,10 @@ public:
 
         //cout << id << " finished eating.\n";
     }
+
+    void stop() {
+        stopping = true;
+    }
 };
 
 const string nameArray[] = {"Yoda", "Obi-Wan", "Rey", "Kanan", "Leia", "Luke", "Ahsoka",
@@ -174,6 +179,7 @@ void dine()
 
     for(auto & philosopher : philosophers)
     {
+        philosopher->stop();
         delete philosopher;
     }
 }
