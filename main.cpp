@@ -14,6 +14,7 @@ using namespace std;
 const int NUMBER_OF_PHILOSOPHERS = 5;
 
 #define DEBUG 0
+#define RUNTIME 10'000'000
 
 class NullBuffer : public std::streambuf {
 public:
@@ -197,11 +198,13 @@ void dine()
         philosophers[i] = new Philosopher(nameArray[i], syncro, i);
     }
     start = true;
-    usleep(10'000'000);
+    usleep(RUNTIME);
 
     for(auto & philosopher : philosophers)
     {
         philosopher->stop();
+    }
+    for (auto & philosopher : philosophers) {
         delete philosopher;
     }
 }
