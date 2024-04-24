@@ -135,7 +135,7 @@ public:
         static std::uniform_int_distribution<int> dist(1, 2);
         while (!start) usleep(1);
 
-        while(!stopping) {
+        while(start) {
             mystatus = THINKING;
             debug() << "philosopher #" << id << " is thinking\n";
             use_timer(1000000, thinkTime);
@@ -178,10 +178,6 @@ public:
 
         //debug() << id << " finished eating.\n";
     }
-
-    void stop() {
-        stopping = true;
-    }
 };
 
 const string nameArray[] = {"Yoda", "Obi-Wan", "Rey", "Kanan", "Leia", "Luke", "Ahsoka",
@@ -199,11 +195,8 @@ void dine()
     }
     start = true;
     usleep(RUNTIME);
+    start = false;
 
-    for(auto & philosopher : philosophers)
-    {
-        philosopher->stop();
-    }
     for (auto & philosopher : philosophers) {
         delete philosopher;
     }
