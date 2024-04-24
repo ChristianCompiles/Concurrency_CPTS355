@@ -32,6 +32,8 @@ ostream& debug() {
 
 mutex outputMutex;
 
+volatile bool start = false;
+
 class Chopstick
     {
 private:
@@ -130,6 +132,7 @@ public:
         static std::random_device rd;
         static std::mt19937 mt(rd());
         static std::uniform_int_distribution<int> dist(1, 2);
+        while (!start) usleep(1);
 
         while(!stopping) {
             mystatus = THINKING;
@@ -193,6 +196,7 @@ void dine()
     {
         philosophers[i] = new Philosopher(nameArray[i], syncro, i);
     }
+    start = true;
     usleep(10'000'000);
 
     for(auto & philosopher : philosophers)
