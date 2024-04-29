@@ -38,14 +38,22 @@ volatile bool start = false;
 class Chopstick
     {
 private:
-    mutex chopTex;
+    timed_mutex chopTex;
+
     int status;
 public:
     Chopstick() {}
-    void lockChopstick()
+    bool lockChopstick(bool wait)
     {
-        chopTex.lock();
+        if(wait)
+            return chopTex.try_lock_for(5ms);
+        else
+        {
+            chopTex.lock();
+            return true;
+        }
     }
+
     void unlockChopstick()
     {
         chopTex.unlock();
@@ -65,9 +73,9 @@ public:
     {
         chopsticks[id].unlockChopstick();
     }
-    void pickUpChopstick(int id)
+    bool pickUpChopstick(int id, bool wait)
     {
-        chopsticks[id].lockChopstick();
+        return chopsticks[id].lockChopstick(wait);
     }
 };
 
@@ -143,36 +151,34 @@ public:
             // coin toss
             // start hungry timer
             auto start = std::chrono::high_resolution_clock::now();
-            if (dist(mt) == 1) // if 1, pick up left first
-            {
-                debug() << id << ": up LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
-                syncro.pickUpChopstick(left_chopstick);
-                syncro.pickUpChopstick(right_chopstick);
-            } else // pick up right first
-            {
-                debug() << id << ": up RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
-                syncro.pickUpChopstick(right_chopstick);
-                syncro.pickUpChopstick(left_chopstick);
-            }
+
+            debug() << id << ": up LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
+
+            syncro.pickUpChopstick(left_chopstick, false);
+
+            bool picked_up_right_chopstick = syncro.pickUpChopstick(right_chopstick, true);
+
             auto stop = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
             hungryTime += duration.count();
+
+            if(!picked_up_right_chopstick)
+            {
+                syncro.putDownChopstick(left_chopstick);
+                continue;
+            }
 
             mystatus = EATING;
             
             debug() << id << " started eating.\n\n";
 
-            if (dist(mt) == 1) // if 1, set down left first
-            {
-                debug() << id << ": down LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
-                syncro.putDownChopstick(left_chopstick);
-                syncro.putDownChopstick(right_chopstick);
-            } else {
-                debug() << id << ": down RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
-                syncro.putDownChopstick(right_chopstick);
-                syncro.putDownChopstick(left_chopstick);
-            }
+            debug() << id << ": down LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
+
             use_timer(500000, eatTime);
+
+            syncro.putDownChopstick(left_chopstick);
+            syncro.putDownChopstick(right_chopstick);
+            
             mystatus = HUNGRY;
         }
 
