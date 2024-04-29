@@ -18,6 +18,8 @@
 | 4             | 9018us      | 800125ms      | 400181ms    |
 | 5             | 9080us      | 800115ms      | 400181ms    |
 
+*Times may have been more noisy on this run because they were executed under a Windows host while the rest were on Linux machines.*
+
 # 7 philosophers
 
 | Philosopher # | Hungry time | Thinking time | Eating time |
