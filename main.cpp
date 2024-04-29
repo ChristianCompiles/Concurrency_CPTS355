@@ -161,6 +161,7 @@ public:
             
             debug() << id << " started eating.\n\n";
 
+            use_timer(500000, eatTime);
             if (dist(mt) == 1) // if 1, set down left first
             {
                 debug() << id << ": down LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
@@ -171,7 +172,7 @@ public:
                 syncro.putDownChopstick(right_chopstick);
                 syncro.putDownChopstick(left_chopstick);
             }
-            use_timer(500000, eatTime);
+
             mystatus = HUNGRY;
         }
 
