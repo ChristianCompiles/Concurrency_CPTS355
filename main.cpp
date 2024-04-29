@@ -196,6 +196,9 @@ void dine()
     start = true;
     usleep(RUNTIME);
     start = false;
+    debug() << "Stopping philosophers and delaying for cleanup...\n";
+    // 2s > eating time + hungry time
+    usleep(2'000'000);
 
     for (auto & philosopher : philosophers) {
         delete philosopher;
