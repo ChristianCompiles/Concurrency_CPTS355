@@ -14,7 +14,7 @@ using namespace std;
 const int NUMBER_OF_PHILOSOPHERS = 5;
 
 #define DEBUG 0
-#define RUNTIME 10'000'000
+#define RUNTIME 1'200'000'000
 
 class NullBuffer : public std::streambuf {
 public:
