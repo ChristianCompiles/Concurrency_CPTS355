@@ -1,6 +1,12 @@
 # 5 philosophers
 
-TBD
+| Philosopher # | Hungry time | Thinking time | Eating time |
+|---------------|-------------|---------------|-------------|
+| 0             | 29805us     | 801000ms      | 400000ms    |
+| 1             | 25623us     | 800000ms      | 400000ms    |
+| 2             | 9720us      | 801000ms      | 400000ms    |
+| 3             | 7925us      | 800000ms      | 400000ms    |
+| 4             | 517735us    | 800000ms      | 400000ms    |
 
 # 6 philosophers
 
@@ -15,7 +21,15 @@ TBD
 
 # 7 philosophers
 
-TBD
+| Philosopher # | Hungry time | Thinking time | Eating time |
+|---------------|-------------|---------------|-------------|
+| 0             | 32458us     | 801000ms      | 400000ms    |
+| 1             | 399622309us | 801000ms      | 1000ms      |
+| 2             | 509283us    | 800000ms      | 399500ms    |
+| 3             | 519115us    | 800000ms      | 400000ms    |
+| 4             | 22452us     | 801000ms      | 400000ms    |
+| 5             | 34958us     | 800000ms      | 400000ms    |
+| 6             | 539457us    | 800000ms      | 400000ms    |
 
 # 20 philosophers
 
