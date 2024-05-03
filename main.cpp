@@ -8,13 +8,18 @@
 #include <time.h>
 #include <random>
 #include <sstream>
+#include <atomic>
+
 using namespace std;
 //const int UNLOCKED = 0;
 //const int LOCKED = 1;
-const int NUMBER_OF_PHILOSOPHERS = 5;
+const int NUMBER_OF_PHILOSOPHERS = 3;
+const int THINK_TIME_MS = 1'000'000;
+const int EAT_TIME_MS = 500'000;
+
 
 #define DEBUG 0
-#define RUNTIME 1'200'000'000
+#define RUNTIME 120'000'000
 
 class NullBuffer : public std::streambuf {
 public:
@@ -33,10 +38,10 @@ ostream& debug() {
 
 mutex outputMutex;
 
-volatile bool start = false;
+std::atomic<bool> start{ false };
 
 class Chopstick
-    {
+{
 private:
     mutex chopTex;
     int status;
@@ -78,7 +83,7 @@ enum status
     HUNGRY
 };
 
-void use_timer(int amount, long &time_acc)
+void use_timer(int amount, long& time_acc)
 {
     auto start = std::chrono::high_resolution_clock::now();
     usleep(amount);
@@ -89,7 +94,7 @@ void use_timer(int amount, long &time_acc)
     time_acc += duration.count();
 }
 
-class Philosopher: thread
+class Philosopher : thread
 {
 private:
     string name;
@@ -98,13 +103,14 @@ private:
     long hungryTime = 0;
     int id;
     thread mainThread;
-    Syncro &syncro;
+    Syncro& syncro;
     int left_chopstick, right_chopstick;
     status mystatus;
     bool stopping = false;
+    int eatCount = 0;
 
 public:
-    Philosopher(const string& name, Syncro &t, int id): mainThread(&Philosopher::run, this), syncro(t)
+    Philosopher(const string& name, Syncro& t, int id) : mainThread(&Philosopher::run, this), syncro(t)
     {
         this->name = name;
         this->id = id;
@@ -113,16 +119,17 @@ public:
         this->right_chopstick = (id + 1) % NUMBER_OF_PHILOSOPHERS;
     }
 
-    status tell_status(){return mystatus;}
+    status tell_status() { return mystatus; }
 
     ~Philosopher()
     {
         {
             lock_guard<std::mutex> outLock(outputMutex);
-            cout << endl << id << " stats\n";
+            cout << endl << name << " stats\n";
             cout << "hungrytime: " << hungryTime << "us" << endl;
             cout << "thinkingtime: " << thinkTime << "ms" << endl;
             cout << "eatingtime: " << eatTime << "ms" << endl;
+            cout << "times eaten: " << eatCount << endl;
         }
 
         mainThread.join();
@@ -133,45 +140,38 @@ public:
         static std::random_device rd;
         static std::mt19937 mt(rd());
         static std::uniform_int_distribution<int> dist(1, 2);
-        while (!start) usleep(1);
+        while (!start) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-        while(start) {
+        while (start) {
             mystatus = THINKING;
             debug() << "philosopher #" << id << " is thinking\n";
-            use_timer(1000000, thinkTime);
+            use_timer(THINK_TIME_MS, thinkTime);
+
             // coin toss
             // start hungry timer
             auto start = std::chrono::high_resolution_clock::now();
-            if (dist(mt) == 1) // if 1, pick up left first
-            {
-                debug() << id << ": up LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
-                syncro.pickUpChopstick(left_chopstick);
-                syncro.pickUpChopstick(right_chopstick);
-            } else // pick up right first
-            {
-                debug() << id << ": up RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
-                syncro.pickUpChopstick(right_chopstick);
-                syncro.pickUpChopstick(left_chopstick);
-            }
+
+            // Always pick up the lower-numbered chopstick first to prevent deadlocks
+            int first = std::min(left_chopstick, right_chopstick);
+            int second = std::max(left_chopstick, right_chopstick);
+
+            debug() << id << ": up (" << first << ", " << second << ")" << endl;
+            syncro.pickUpChopstick(first);
+            syncro.pickUpChopstick(second);
+
             auto stop = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
             hungryTime += duration.count();
 
             mystatus = EATING;
-            
+
             debug() << id << " started eating.\n\n";
 
-            use_timer(500000, eatTime);
-            if (dist(mt) == 1) // if 1, set down left first
-            {
-                debug() << id << ": down LR (" << left_chopstick << ", " << right_chopstick << ")" << endl;
-                syncro.putDownChopstick(left_chopstick);
-                syncro.putDownChopstick(right_chopstick);
-            } else {
-                debug() << id << ": down RL (" << right_chopstick << ", " << left_chopstick << ")" << endl;
-                syncro.putDownChopstick(right_chopstick);
-                syncro.putDownChopstick(left_chopstick);
-            }
+            use_timer(EAT_TIME_MS, eatTime);
+            eatCount++;
+
+            syncro.putDownChopstick(second);
+            syncro.putDownChopstick(first);
 
             mystatus = HUNGRY;
         }
@@ -181,16 +181,16 @@ public:
     }
 };
 
-const string nameArray[] = {"Yoda", "Obi-Wan", "Rey", "Kanan", "Leia", "Luke", "Ahsoka",
+const string nameArray[] = { "Yoda", "Obi-Wan", "Rey", "Kanan", "Leia", "Luke", "Ahsoka",
                           "Mace Windu", "Ezra", "Palpatine", "Anakin", "Kylo Ren", "Dooku",
-                          "Kit Fisto", "Luminara", "Plo Koon", "Revan", "Thrawn", "Zeb", "Sabine"};
+                          "Kit Fisto", "Luminara", "Plo Koon", "Revan", "Thrawn", "Zeb", "Sabine" };
 
 void dine()
 {
     Syncro syncro;
     Philosopher* philosophers[NUMBER_OF_PHILOSOPHERS];
 
-    for(int i = 0; i < NUMBER_OF_PHILOSOPHERS; i++)
+    for (int i = 0; i < NUMBER_OF_PHILOSOPHERS; i++)
     {
         philosophers[i] = new Philosopher(nameArray[i], syncro, i);
     }
@@ -201,13 +201,14 @@ void dine()
     // 2s > eating time + hungry time
     usleep(2'000'000);
 
-    for (auto & philosopher : philosophers) {
+    for (auto& philosopher : philosophers) {
         delete philosopher;
     }
 }
 
 int main()
 {
+    cout << "intended runtime: " << (RUNTIME / 1'000'000) << " seconds" << endl;
     dine();
     return 0;
 }
